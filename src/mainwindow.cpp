@@ -6,6 +6,9 @@
 #include <QFileInfo>
 #include <QSettings>
 #include <QShortcut>
+#include <QWebElement>
+#include <QWebFrame>
+#include <QWebPage>
 
 #include "configdialog.h"
 #include "dataview.h"
@@ -19,7 +22,8 @@ MainWindow::MainWindow(
     m_ui(new Ui::MainWindow),
     mMarkActive(false),
     m_viewDataRotation(0),
-    m_units(PlotValue::Imperial)
+    m_units(PlotValue::Imperial),
+    mWebPage(0)
 {
     m_ui->setupUi(this);
 
@@ -63,6 +67,7 @@ MainWindow::MainWindow(
 
 MainWindow::~MainWindow()
 {
+    if (mWebPage) delete mWebPage;
     delete m_ui;
 }
 
@@ -359,6 +364,69 @@ void MainWindow::on_actionImport_triggered()
     initRange();
 
     emit dataLoaded();
+
+    // Delete current mWebPage if necessary
+    if (mWebPage) delete mWebPage;
+
+    // Create new mWebPage
+    mWebPage = new QWebPage(this);
+
+    connect(mWebPage->mainFrame(), SIGNAL(javaScriptWindowObjectCleared()),
+            this, SLOT(javaScriptWindowObjectCleared()));
+
+    mWebPage->mainFrame()->load(QUrl("qrc://html/elevations.html"));
+
+    QString js = QString("alert('Hello');");
+
+    mWebPage->mainFrame()->documentElement().evaluateJavaScript(js);
+/*
+//    qDebug() << mWebPage->mainFrame()->documentElement().evaluateJavaScript("1+1;").toString();
+
+    QString js = QString("var elevator;") +
+                 QString("elevator = new google.maps.ElevationService();") +
+                 QString("mainWindow.elevationsReady();");
+
+    mWebPage->mainFrame()->documentElement().evaluateJavaScript(js);
+*/
+/*
+    mWebPage->mainFrame()->setUrl(QUrl("qrc://html/elevations.html"));
+
+    // Build request
+    QString js = QString("var locations = [");
+    for (int i = 0; i < m_data.size(); ++i)
+    {
+        DataPoint &dp = m_data[i];
+        if (i > 0) js += QString(", ");
+        js += QString("new google.maps.LatLng(%1, %2)").arg(dp.lat, 0, 'f').arg(dp.lon, 0, 'f');
+    }
+    js += QString("];");
+
+    js += QString("var locationRequest = {") +
+          QString("  'locations': locations") +
+          QString("}");
+
+    js += QString("elevator.getElevationForLocations(locationRequest, handleElevations);");
+
+    qDebug() << js;
+
+    // Process elevation request
+    mWebPage->mainFrame()->documentElement().evaluateJavaScript(js);
+*/
+}
+
+void MainWindow::javaScriptWindowObjectCleared()
+{
+    qDebug() << "***Here!***";
+
+    // Add this window to JavaScript
+    mWebPage->mainFrame()->addToJavaScriptWindowObject("mainWindow", this);
+}
+
+void MainWindow::elevationsReady()
+{
+    qDebug() << "elevationsReady()";
+    delete mWebPage;
+    mWebPage = 0;
 }
 
 double MainWindow::getSlope(

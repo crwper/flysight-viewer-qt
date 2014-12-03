@@ -11,6 +11,7 @@
 
 class QCPRange;
 class QCustomPlot;
+class QWebPage;
 
 namespace Ui {
 class MainWindow;
@@ -117,6 +118,8 @@ private:
     double                mRangeLower;
     double                mRangeUpper;
 
+    QWebPage             *mWebPage;
+
     void writeSettings();
     void readSettings();
 
@@ -140,6 +143,10 @@ signals:
     void dataLoaded();
     void dataChanged();
     void rotationChanged(double rotation);
+
+public slots:
+    void javaScriptWindowObjectCleared();
+    void elevationsReady();
 };
 
 #endif // MAINWINDOW_H

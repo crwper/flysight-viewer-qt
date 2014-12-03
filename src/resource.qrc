@@ -1,5 +1,6 @@
 <RCC>
     <qresource prefix="/html">
         <file>mapview.html</file>
+        <file>elevations.html</file>
     </qresource>
 </RCC>

@@ -27,11 +27,6 @@
 #include <QDir>
 #include <QFileDialog>
 
-#include <VLCQtCore/Common.h>
-#include <VLCQtCore/Instance.h>
-#include <VLCQtCore/Media.h>
-#include <VLCQtCore/MediaPlayer.h>
-
 #include "common.h"
 #include "mainwindow.h"
 
@@ -42,8 +37,7 @@ VideoView::VideoView(QWidget *parent) :
     ui(new Ui::VideoView),
     mMainWindow(0),
     mZeroPosition(0),
-    mBusy(false),
-    mMedia(0)
+    mBusy(false)
 {
     ui->setupUi(this);
 
@@ -66,20 +60,19 @@ VideoView::VideoView(QWidget *parent) :
     ui->scrubDial->setPageStep(300);
     connect(ui->scrubDial, SIGNAL(valueChanged(int)), this, SLOT(setScrubPosition(int)));
 
-    mInstance = new VlcInstance(VlcCommon::args(), this);
-    mPlayer = new VlcMediaPlayer(mInstance);
-    mPlayer->setVideoWidget(ui->videoWidget);
+    mPlayer = new QMediaPlayer(this);
+    mVideoWidget = new QVideoWidget(this);
+    mPlayer->setVideoOutput(ui->videoWidget);
 
-    connect(mPlayer, SIGNAL(stateChanged()), this, SLOT(stateChanged()));
-    connect(mPlayer, SIGNAL(timeChanged(int)), this, SLOT(timeChanged(int)));
-    connect(mPlayer, SIGNAL(lengthChanged(int)), this, SLOT(lengthChanged(int)));
+    connect(mPlayer, SIGNAL(stateChanged(QMediaPlayer::State)), this, SLOT(stateChanged(QMediaPlayer::State)));
+    connect(mPlayer, SIGNAL(positionChanged(qint64)), this, SLOT(positionChanged(qint64)));
+    connect(mPlayer, SIGNAL(durationChanged(qint64)), this, SLOT(durationChanged(qint64)));
 }
 
 VideoView::~VideoView()
 {
+    delete mVideoWidget;
     delete mPlayer;
-    delete mMedia;
-    delete mInstance;
     delete ui;
 }
 
@@ -92,9 +85,7 @@ QSize VideoView::sizeHint() const
 void VideoView::setMedia(const QString &fileName)
 {
     // Set media
-    delete mMedia;
-    mMedia = new VlcMedia(fileName, true, mInstance);
-    mPlayer->open(mMedia);
+    mPlayer->setMedia(QUrl::fromLocalFile(fileName));
 
     // Update buttons
     ui->playButton->setEnabled(true);
@@ -123,7 +114,7 @@ void VideoView::play()
 {
     switch(mPlayer->state())
     {
-    case Vlc::Playing:
+    case QMediaPlayer::PlayingState:
         mPlayer->pause();
         break;
     default:
@@ -133,11 +124,11 @@ void VideoView::play()
     }
 }
 
-void VideoView::stateChanged()
+void VideoView::stateChanged(QMediaPlayer::State newState)
 {
-    switch(mPlayer->state())
+    switch(newState)
     {
-    case Vlc::Playing:
+    case QMediaPlayer::PlayingState:
         ui->playButton->setIcon(style()->standardIcon(QStyle::SP_MediaPause));
         break;
     default:
@@ -146,7 +137,7 @@ void VideoView::stateChanged()
     }
 }
 
-void VideoView::timeChanged(int position)
+void VideoView::positionChanged(qint64 position)
 {
     mBusy = true;
 
@@ -164,7 +155,7 @@ void VideoView::timeChanged(int position)
     mBusy = false;
 }
 
-void VideoView::lengthChanged(int duration)
+void VideoView::durationChanged(qint64 duration)
 {
     ui->positionSlider->setRange(0, duration / POSITION_DIV);
 }
@@ -174,8 +165,8 @@ void VideoView::setPosition(int position)
     if (!mBusy)
     {
         // Update video position
-        mPlayer->setTime(position * POSITION_DIV);
-        timeChanged(position * POSITION_DIV);
+        mPlayer->setPosition(position * POSITION_DIV);
+        positionChanged(position * POSITION_DIV);
     }
 }
 
@@ -183,21 +174,21 @@ void VideoView::setScrubPosition(int position)
 {
     if (!mBusy)
     {
-        int oldPosition = mPlayer->time();
+        int oldPosition = mPlayer->position();
         int newPosition = oldPosition - oldPosition % 1000 + position;
 
         while (newPosition <= oldPosition - 500) newPosition += 1000;
         while (newPosition >  oldPosition + 500) newPosition -= 1000;
 
         // Update video position
-        mPlayer->setTime(newPosition);
-        timeChanged(newPosition);
+        mPlayer->setPosition(newPosition);
+        positionChanged(newPosition);
     }
 }
 
 void VideoView::zero()
 {
-    mZeroPosition = mPlayer->time();
+    mZeroPosition = mPlayer->position();
 
     // Update text label
     double time = (double) (mZeroPosition - mZeroPosition) / 1000;
@@ -216,11 +207,11 @@ void VideoView::updateView()
     int position = dp.t * 1000 + mZeroPosition;
 
     // If playback position is within video bounds
-    if (0 <= position && position <= mPlayer->length())
+    if (0 <= position && position <= mPlayer->duration())
     {
         // Update video position
-        mPlayer->setTime(position);
-        timeChanged(position);
+        mPlayer->setPosition(position);
+        positionChanged(position);
     }
 }
 

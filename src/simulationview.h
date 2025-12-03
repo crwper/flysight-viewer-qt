@@ -4,6 +4,9 @@
 #include <QTemporaryFile>
 #include <QWidget>
 
+#include <QMediaPlayer>
+#include <QVideoWidget>
+
 #include "config.h"
 #include "tone.h"
 #include "ubx.h"
@@ -14,9 +17,6 @@ class SimulationView;
 
 class DataPoint;
 class MainWindow;
-class VlcInstance;
-class VlcMedia;
-class VlcMediaPlayer;
 
 class SimulationView : public QWidget
 {
@@ -38,9 +38,8 @@ private:
     Ui::SimulationView *ui;
     MainWindow         *mMainWindow;
 
-    VlcInstance        *mInstance;
-    VlcMedia           *mMedia;
-    VlcMediaPlayer     *mPlayer;
+    QMediaPlayer       *mPlayer;
+    QVideoWidget       *mVideoWidget;
 
     bool               mBusy;
 
@@ -63,9 +62,9 @@ private slots:
 
     void on_processButton_clicked();
 
-    void stateChanged();
-    void timeChanged(int position);
-    void lengthChanged(int duration);
+    void stateChanged(QMediaPlayer::State newState);
+    void positionChanged(qint64 position);
+    void durationChanged(qint64 duration);
     void setPosition(int position);
     void setScrubPosition(int position);
 };

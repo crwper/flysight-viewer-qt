@@ -26,15 +26,14 @@
 
 #include <QDialog>
 
+#include <QMediaPlayer>
+#include <QVideoWidget>
+
 namespace Ui {
     class VideoView;
 }
 
 class MainWindow;
-
-class VlcInstance;
-class VlcMedia;
-class VlcMediaPlayer;
 
 class VideoView : public QWidget
 {
@@ -57,9 +56,8 @@ private:
     Ui::VideoView  *ui;
     MainWindow     *mMainWindow;
 
-    VlcInstance    *mInstance;
-    VlcMedia       *mMedia;
-    VlcMediaPlayer *mPlayer;
+    QMediaPlayer   *mPlayer;
+    QVideoWidget   *mVideoWidget;
 
     qint64          mZeroPosition;
     bool            mBusy;
@@ -71,9 +69,9 @@ public slots:
     void zero();
 
 private slots:
-    void stateChanged();
-    void timeChanged(int position);
-    void lengthChanged(int duration);
+    void stateChanged(QMediaPlayer::State newState);
+    void positionChanged(qint64 position);
+    void durationChanged(qint64 duration);
     void setPosition(int position);
     void setScrubPosition(int position);
 };

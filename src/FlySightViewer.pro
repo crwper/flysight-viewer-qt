@@ -5,6 +5,7 @@
 #-------------------------------------------------
 
 QT       += core gui printsupport webenginewidgets sql
+QT       += widgets multimedia multimediawidgets
 
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
@@ -167,27 +168,13 @@ RESOURCES += \
 win32 {
     INCLUDEPATH += ../../../include
     INCLUDEPATH += ../../../include/GeographicLib
-
-    LIBS += -L../../../lib
-    CONFIG(debug, debug|release) {
-        LIBS += -lVLCQtCored -lVLCQtQmld -lVLCQtWidgetsd
-    } else {
-        LIBS += -lVLCQtCore -lVLCQtQml -lVLCQtWidgets
-    }
 } else:macx {
     INCLUDEPATH += ../include
     INCLUDEPATH += ../include/GeographicLib
-
-    QMAKE_LFLAGS += -F../macx
-    LIBS         += -framework VLCQtCore
-    LIBS         += -framework VLCQtQml
-    LIBS         += -framework VLCQtWidgets
 } else:unix {
     INCLUDEPATH += ../../../include
     INCLUDEPATH += ../../../include/GeographicLib
-
     LIBS += -L/usr/local/lib
-    LIBS += -lVLCQtCore -lVLCQtQml -lVLCQtWidgets
 }
 
 unix {
